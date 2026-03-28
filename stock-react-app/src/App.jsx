@@ -6,6 +6,7 @@ import './App.css'
 import stockSymbols from './stockSymbols.json';
 
 
+const FMP_API_KEY = import.meta.env.VITE_FMP_API_KEY;
 function App() {
 
   const[dateTime, setDateTime] = useState(new Date().toLocaleString());
@@ -45,6 +46,14 @@ function App() {
         setLoading(false);
         return;
       }
+      // Fetch company profile for name and logo
+      const profileRes = await fetch(`https://financialmodelingprep.com/stable/profile?symbol=${formData.stockSymbol}&apikey=${FMP_API_KEY}`);
+      const profileData = await profileRes.json();
+      if (profileData && profileData[0]) {
+        setCompanyInfo(profileData[0]);
+      } else {
+        setCompanyInfo(null);
+      }
     } catch (err) {
       setError('Error fetching stock analysis.');
     }
@@ -71,7 +80,7 @@ function App() {
         <div>
             <form onSubmit={handleSubmit}>
               <label>
-                Stock Symbol:
+                <h3>Stock Symbol: </h3>
                 <input
                   type="text"
                   name="stockSymbol"
@@ -88,32 +97,75 @@ function App() {
                   ))}
                 </datalist>
               </label>
-              <br />
+              <p></p>
               <button type="submit" disabled={loading}>
                 {loading ? 'Loading...' : 'Submit'}
               </button>
             </form>
+          <br />
           {error && <div style={{ color: 'red', marginTop: '8px' }}>{error}</div>}
           {loading && <div style={{ marginTop: '8px' }}>Loading...</div>}
           {stockData && (
-            <div className='results'>
-              <h2>{stockData.ticker}</h2>
-              <h2><strong>{stockData.signal}</strong></h2>
-              <p><strong>Probabilities:</strong></p>
-              <ul>
-                <li>Buy: {stockData.probabilities.buy}%</li>
-                <li>Hold: {stockData.probabilities.hold}%</li>
-                <li>Sell: {stockData.probabilities.sell}%</li>
-              </ul>
-              <p><strong>Indicators:</strong></p>
-              <ul>
-                <li>RSI: {stockData.indicators.rsi.toFixed(2)}</li>
-                <li>SMA 20: {stockData.indicators.sma_20.toFixed(2)}</li>
-                <li>SMA 50: {stockData.indicators.sma_50.toFixed(2)}</li>
-              </ul>
-              <p><strong>Sentiment:</strong> {stockData.sentiment}</p>
-              <p><strong>Reasons:</strong></p>
-              <ul>
+            <div className='results' style={{ textAlign: 'center' }}>
+              {companyInfo ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  {companyInfo.image && (
+                    <img src={companyInfo.image} alt={companyInfo.companyName} style={{ width: 100, height: 100, objectFit: 'contain'}} />
+                  )}
+                  <h1 style={{ margin: 0 }}>{companyInfo.companyName}</h1>
+                </div>
+              ) : (
+                <h1>{stockData.ticker}</h1>
+              )}
+              <br />
+              <h2>
+                <strong
+                  style={{
+                    color:
+                      stockData.signal === 'BUY'
+                        ? 'green'
+                        : stockData.signal === 'SELL'
+                        ? 'red'
+                        : 'goldenrod'
+                  }}
+                >
+                  {stockData.signal}
+                </strong>
+              </h2>
+              <br />
+              <h2>Probabilities:</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(100px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ background: '#e6ffed', padding: '10px', borderRadius: '8px', textAlign: 'center', border: '1px solid #a3e5b5' }}>
+                  <div style={{ fontWeight: 'bold', color: 'green' }}>BUY</div>
+                  <div>{stockData.probabilities.buy}%</div>
+                </div>
+                <div style={{ background: '#fff9db', padding: '10px', borderRadius: '8px', textAlign: 'center', border: '1px solid #f7de7d' }}>
+                  <div style={{ fontWeight: 'bold', color: 'goldenrod' }}>HOLD</div>
+                  <div>{stockData.probabilities.hold}%</div>
+                </div>
+                <div style={{ background: '#ffe7e7', padding: '10px', borderRadius: '8px', textAlign: 'center', border: '1px solid #e5a6a6' }}>
+                  <div style={{ fontWeight: 'bold', color: 'red' }}>SELL</div>
+                  <div>{stockData.probabilities.sell}%</div>
+                </div>
+              </div>
+              <h2>Indicators:</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(100px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
+                  <div style={{ fontWeight: 'bold' }}>RSI</div>
+                  <div>{stockData.indicators.rsi.toFixed(2)}</div>
+                </div>
+                <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
+                  <div style={{ fontWeight: 'bold' }}>SMA 20</div>
+                  <div>{stockData.indicators.sma_20.toFixed(2)}</div>
+                </div>
+                <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
+                  <div style={{ fontWeight: 'bold' }}>SMA 50</div>
+                  <div>{stockData.indicators.sma_50.toFixed(2)}</div>
+                </div>
+              </div>
+              {/* <p><strong>Sentiment:</strong> {stockData.sentiment}</p> */}
+              <h2>Reasons:</h2>
+              <ul style={{ listStyleType: 'none', padding: '0' }}>
                 {stockData.reasons.map((reason, index) => (
                   <li key={index}>{reason}</li>
                 ))}
@@ -126,7 +178,9 @@ function App() {
       </section>
 
       <div className="ticks"></div>
-      <section id="spacer"></section>
+      <section id="spacer">
+        <p>RevUC 2026 Project</p>
+      </section>
     </>
   );
 }
