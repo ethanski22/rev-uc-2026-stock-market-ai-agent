@@ -17,23 +17,32 @@ app.get('/api/stock/:ticker', (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
 
   console.log('__dirname:', __dirname);
-  const scriptPath = 'c:/RevUC/rev-uc-2026-stock-market-ai-agent/stock-react-app/stockAnalysis.py';
+  const scriptPath = path.join(__dirname, 'stockAnalysis.py');
   console.log('scriptPath:', scriptPath);
   console.log('executing:', `python c:/RevUC/rev-uc-2026-stock-market-ai-agent/stock-react-app/stockAnalysis.py ${ticker}`);
   exec(
-    `python c:/RevUC/rev-uc-2026-stock-market-ai-agent/stock-react-app/stockAnalysis.py ${ticker}`,
+    `python "${scriptPath}" ${ticker}`,
     { timeout: 25000, maxBuffer: 10 * 1024 * 1024 },
     (error, stdout, stderr) => {
       if (error) {
-        return res.status(500).json({ error: 'Failed to run analysis', details: stderr || error.message });
+        return res.status(500).json({
+          error: 'Failed to run analysis',
+          details: stderr || error.message,
+        });
       }
-    try {
-      const result = JSON.parse(stdout);
-      res.json(result);
-    } catch (parseError) {
-      res.status(500).json({ error: 'Failed to parse analysis result', details: parseError.message });
+
+      try {
+        const result = JSON.parse(stdout);
+        res.json(result);
+      } catch (parseError) {
+        res.status(500).json({
+          error: 'Failed to parse analysis result',
+          details: parseError.message,
+          rawOutput: stdout, // helpful for debugging
+        });
+      }
     }
-  });
+  );
 });
 
 app.listen(PORT, () => {
